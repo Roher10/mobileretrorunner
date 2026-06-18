@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  @keyframes pd-blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+  @keyframes pd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes pd-glow{0%,100%{text-shadow:0 0 6px #ff2e97,0 0 16px #ff2e97}50%{text-shadow:0 0 10px #ff6fc0,0 0 28px #ff2e97}}
+</style>
+</helmet>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="tbg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1a0833"/><stop offset="1" stop-color="#5a1c63"/>
+      </linearGradient>
+      <linearGradient id="tsun" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff39a"/><stop offset="0.55" stop-color="#ff7aa8"/><stop offset="1" stop-color="#e23b86"/>
+      </linearGradient>
+    </defs>
+    <rect width="240" height="240" rx="36" fill="url(#tbg)"/>
+    <circle cx="120" cy="150" r="46" fill="url(#tsun)"/>
+    <rect x="74" y="146" width="92" height="5" fill="#5a1c63"/>
+    <rect x="74" y="156" width="92" height="6" fill="#5a1c63"/>
+    <rect x="100" y="128" width="30" height="34" rx="3" fill="#00f0ff"/>
+    <rect x="118" y="135" width="6" height="6" fill="#fff"/>
+    <text x="120" y="74" font-family="monospace" font-size="34" font-weight="700" fill="#7df9ff" text-anchor="middle">ND</text>
+  </svg>
+</template>
+<div style="min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px 16px;background:radial-gradient(circle at 50% 18%,#1a0833 0%,#0a0418 55%,#050209 100%);font-family:'VT323',monospace;">
+
+  <div style="position:relative;padding:13px;background:linear-gradient(160deg,#1b1826,#0f0d16);border-radius:44px;box-shadow:inset 0 0 0 2px #312c47, inset 0 0 0 5px #0c0a14, 0 26px 70px rgba(0,0,0,.65), 0 0 70px rgba(255,46,151,.16);">
+    <div style="position:absolute;top:21px;left:50%;transform:translateX(-50%);width:96px;height:7px;background:#070610;border-radius:5px;z-index:8;pointer-events:none;"></div>
+    <div style="position:relative;width:400px;height:720px;border-radius:32px;overflow:hidden;background:#050209;">
+
+      <canvas id="pd-canvas" width="200" height="360" style="position:absolute;inset:0;width:400px;height:720px;image-rendering:pixelated;display:block;touch-action:none;user-select:none;"></canvas>
+
+      <sc-if value="{{ scanlinesOn }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:6;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.22) 3px,rgba(0,0,0,.22) 4px);mix-blend-mode:multiply;"></div>
+      </sc-if>
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(5,2,12,.72) 100%);"></div>
+
+      <!-- HUD -->
+      <sc-if value="{{ isPlaying }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;padding:18px 16px;pointer-events:none;">
+          <div style="font-family:'Press Start 2P';color:#7df9ff;font-size:9px;line-height:1.9;text-shadow:0 0 8px rgba(125,249,255,.7);">SCORE<br><span id="pd-score" style="color:#fff;font-size:13px;">000000</span></div>
+          <div style="font-family:'Press Start 2P';color:#ffe14d;font-size:11px;text-shadow:0 0 8px rgba(255,225,77,.7);">◆ <span id="pd-coins">0</span></div>
+        </div>
+        <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:0;right:0;bottom:172px;z-index:5;text-align:center;font-family:'Press Start 2P';color:#fff;font-size:8px;line-height:2.2;pointer-events:none;text-shadow:0 0 8px #000;">TAP THE PADS&nbsp;—&nbsp;OR<br>TAP TOP&nbsp;·&nbsp;<span style="color:#7df9ff;">JUMP</span>&nbsp;&nbsp;BOTTOM&nbsp;·&nbsp;<span style="color:#ff6fc0;">SLIDE</span></div>
+        </sc-if>
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-end;padding:0 22px 28px;pointer-events:none;">
+          <button onPointerDown="{{ onSlideBtn }}" style="pointer-events:auto;width:86px;height:86px;border-radius:50%;border:2px solid #ff6fc0;background:radial-gradient(circle,rgba(255,46,151,.22),rgba(255,46,151,.05));color:#ff6fc0;font-family:'Press Start 2P';font-size:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;box-shadow:0 0 18px rgba(255,46,151,.4),inset 0 0 14px rgba(255,46,151,.18);touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent;text-shadow:0 0 8px rgba(255,46,151,.8);" style-active="transform:scale(.9);background:radial-gradient(circle,rgba(255,46,151,.5),rgba(255,46,151,.14));">
+            <span style="font-size:18px;line-height:1;">▼</span>SLIDE
+          </button>
+          <button onPointerDown="{{ onJumpBtn }}" style="pointer-events:auto;width:108px;height:108px;border-radius:50%;border:2px solid #7df9ff;background:radial-gradient(circle,rgba(0,240,255,.24),rgba(0,240,255,.05));color:#7df9ff;font-family:'Press Start 2P';font-size:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 0 24px rgba(0,240,255,.45),inset 0 0 16px rgba(0,240,255,.2);touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent;text-shadow:0 0 8px rgba(0,240,255,.8);" style-active="transform:scale(.9);background:radial-gradient(circle,rgba(0,240,255,.55),rgba(0,240,255,.16));">
+            <span style="font-size:22px;line-height:1;">▲</span>JUMP
+          </button>
+        </div>
+      </sc-if>
+
+      <!-- HOME -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 28px;background:radial-gradient(circle at 50% 38%,rgba(8,2,20,.4),rgba(6,2,14,.9));">
+          <div style="font-family:'Press Start 2P';font-size:9px;color:#ffe14d;letter-spacing:3px;text-shadow:0 0 10px rgba(255,225,77,.6);">◆ ENDLESS RUNNER ◆</div>
+          <div style="font-family:'Press Start 2P';font-size:30px;line-height:1.18;color:#7df9ff;text-align:center;text-shadow:0 0 8px #00f0ff,0 0 22px rgba(0,240,255,.7);">NEON<br>DASH</div>
+          <div style="font-family:'Press Start 2P';font-size:8px;color:#ff6fc0;letter-spacing:2px;animation:pd-glow 2.4s ease-in-out infinite;">BEST&nbsp;&nbsp;<span style="color:#fff;">{{ bestText }}</span></div>
+          <button onClick="{{ onPlay }}" style="margin-top:10px;font-family:'Press Start 2P';font-size:14px;color:#07020f;background:#7df9ff;border:0;padding:16px 40px;cursor:pointer;letter-spacing:2px;box-shadow:0 5px 0 #2a8fa6,0 0 24px rgba(0,240,255,.45);" style-active="transform:translateY(5px);box-shadow:0 0 0 #2a8fa6,0 0 24px rgba(0,240,255,.45);">PLAY</button>
+          <button onClick="{{ onShowScores }}" style="font-family:'Press Start 2P';font-size:9px;color:#ffe14d;background:transparent;border:2px solid #ffe14d;padding:11px 20px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(255,225,77,.25);" style-active="transform:translateY(3px);">HIGH SCORES</button>
+          <div style="margin-top:8px;font-family:'Press Start 2P';font-size:7px;color:#8a86b8;line-height:2.2;text-align:center;letter-spacing:1px;">TAP TOP TO JUMP<br>TAP BOTTOM TO SLIDE</div>
+          <div style="font-family:'Press Start 2P';font-size:8px;color:#fff;animation:pd-blink 1.1s step-end infinite;letter-spacing:1px;">▸ INSERT COIN ◂</div>
+        </div>
+      </sc-if>
+
+      <!-- GAME OVER -->
+      <sc-if value="{{ isGameover }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:36px 26px;background:radial-gradient(circle at 50% 40%,rgba(40,4,20,.5),rgba(6,2,14,.93));">
+          <div style="font-family:'Press Start 2P';font-size:21px;color:#ff2e97;text-align:center;line-height:1.3;text-shadow:0 0 10px #ff2e97,0 0 26px rgba(255,46,151,.6);">GAME<br>OVER</div>
+
+          <sc-if value="{{ isNewHigh }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'Press Start 2P';font-size:9px;color:#ffe14d;letter-spacing:1px;animation:pd-glow 1.6s ease-in-out infinite;text-shadow:0 0 10px #ffe14d;">★ NEW HIGH SCORE ★</div>
+          </sc-if>
+
+          <div style="display:flex;gap:26px;font-family:'Press Start 2P';font-size:8px;color:#8a86b8;text-align:center;line-height:2.1;">
+            <div>SCORE<br><span style="color:#7df9ff;font-size:13px;text-shadow:0 0 8px rgba(0,240,255,.6);">{{ scoreText }}</span></div>
+            <div>COINS<br><span style="color:#ffe14d;font-size:13px;">{{ coinsText }}</span></div>
+            <div>DIST<br><span style="color:#ff6fc0;font-size:13px;">{{ distText }}</span></div>
+          </div>
+
+          <sc-if value="{{ enteringInitials }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:4px;">
+              <div style="font-family:'Press Start 2P';font-size:8px;color:#fff;letter-spacing:1px;">ENTER INITIALS</div>
+              <div style="display:flex;gap:16px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <button onClick="{{ onUp0 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▲</button>
+                  <div style="font-family:'Press Start 2P';font-size:24px;color:#fff;width:30px;text-align:center;text-shadow:0 0 10px #00f0ff;">{{ l0 }}</div>
+                  <button onClick="{{ onDown0 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▼</button>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <button onClick="{{ onUp1 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▲</button>
+                  <div style="font-family:'Press Start 2P';font-size:24px;color:#fff;width:30px;text-align:center;text-shadow:0 0 10px #00f0ff;">{{ l1 }}</div>
+                  <button onClick="{{ onDown1 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▼</button>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <button onClick="{{ onUp2 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▲</button>
+                  <div style="font-family:'Press Start 2P';font-size:24px;color:#fff;width:30px;text-align:center;text-shadow:0 0 10px #00f0ff;">{{ l2 }}</div>
+                  <button onClick="{{ onDown2 }}" style="font-family:'Press Start 2P';font-size:11px;color:#7df9ff;background:transparent;border:0;cursor:pointer;">▼</button>
+                </div>
+              </div>
+              <button onClick="{{ onDone }}" style="font-family:'Press Start 2P';font-size:11px;color:#07020f;background:#ffe14d;border:0;padding:12px 30px;cursor:pointer;letter-spacing:2px;box-shadow:0 5px 0 #b89a1f;" style-active="transform:translateY(5px);box-shadow:0 0 0 #b89a1f;">DONE</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ notEntering }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:11px;margin-top:4px;">
+              <sc-if value="{{ hasRank }}" hint-placeholder-val="{{ false }}">
+                <div style="font-family:'Press Start 2P';font-size:9px;color:#ffe14d;letter-spacing:1px;">RANK&nbsp;{{ rankText }}</div>
+              </sc-if>
+              <div style="display:flex;gap:12px;">
+                <button onClick="{{ onRetry }}" style="font-family:'Press Start 2P';font-size:11px;color:#07020f;background:#7df9ff;border:0;padding:13px 22px;cursor:pointer;letter-spacing:1px;box-shadow:0 5px 0 #2a8fa6;" style-active="transform:translateY(5px);box-shadow:0 0 0 #2a8fa6;">RETRY</button>
+                <button onClick="{{ onShowScores }}" style="font-family:'Press Start 2P';font-size:9px;color:#ffe14d;background:transparent;border:2px solid #ffe14d;padding:11px 16px;cursor:pointer;letter-spacing:1px;" style-active="transform:translateY(3px);">SCORES</button>
+                <button onClick="{{ onHome }}" style="font-family:'Press Start 2P';font-size:9px;color:#ff6fc0;background:transparent;border:2px solid #ff6fc0;padding:11px 16px;cursor:pointer;letter-spacing:1px;" style-active="transform:translateY(3px);">HOME</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- SCORES -->
+      <sc-if value="{{ isScores }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 26px;background:radial-gradient(circle at 50% 30%,rgba(8,2,20,.5),rgba(6,2,14,.94));">
+          <div style="font-family:'Press Start 2P';font-size:15px;color:#ffe14d;letter-spacing:1px;text-shadow:0 0 10px rgba(255,225,77,.6);margin-bottom:4px;">HIGH SCORES</div>
+          <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
+            <sc-for list="{{ scoresView }}" as="row" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(125,249,255,.05);border-left:3px solid {{ row.color }};font-family:'Press Start 2P';font-size:10px;">
+                <span style="color:#8a86b8;width:26px;">{{ row.rankText }}</span>
+                <span style="color:{{ row.color }};letter-spacing:2px;flex:1;text-align:left;padding-left:12px;">{{ row.name }}</span>
+                <span style="color:#fff;">{{ row.score }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ onBack }}" style="margin-top:auto;font-family:'Press Start 2P';font-size:10px;color:#07020f;background:#7df9ff;border:0;padding:13px 30px;cursor:pointer;letter-spacing:2px;box-shadow:0 5px 0 #2a8fa6;" style-active="transform:translateY(5px);box-shadow:0 0 0 #2a8fa6;">◂ BACK</button>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <div style="font-family:'Press Start 2P';font-size:8px;color:#5a5478;letter-spacing:2px;">★ NEON DASH · ARCADE PROTOTYPE ★</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 460, &quot;height&quot;: 860 },
+  &quot;difficulty&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Normal&quot;, &quot;options&quot;: [&quot;Chill&quot;, &quot;Normal&quot;, &quot;Hard&quot;], &quot;tsType&quot;: &quot;string&quot; },
+  &quot;theme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Synthwave&quot;, &quot;options&quot;: [&quot;Synthwave&quot;, &quot;Acid&quot;, &quot;Ice&quot;], &quot;tsType&quot;: &quot;string&quot; },
+  &quot;scanlines&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', score: 0, coins: 0, dist: 0, best: 0,
+    scores: [], isNewHigh: false, enteringInitials: false,
+    initials: [0, 0, 0], rank: 0, showHint: false
+  };
+
+  LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  CW = 200; CH = 360; groundY = 248;
+  GRAV = 0.62; JUMP = -9.2; PH = 20; SH = 10;
+  tick = 0; gridOffset = 0; gridScroll = 0; acc = 0; playedOnce = false;
+  lastEntry = null; scoreEl = null; coinEl = null;
+
+  componentDidMount() {
+    this.loadAll();
+    const cv = document.getElementById('pd-canvas');
+    this.canvas = cv;
+    this.ctx = cv.getContext('2d');
+    this.ctx.imageSmoothingEnabled = false;
+    // stars
+    this.stars = [];
+    for (let i = 0; i < 46; i++) {
+      this.stars.push({ x: Math.random() * this.CW, y: Math.random() * (this.groundY - 56), s: Math.random() < 0.25 ? 2 : 1, ph: Math.random() * 6.3 });
+    }
+    this.handlePointer = this.handlePointer.bind(this);
+    this.handleKey = this.handleKey.bind(this);
+    cv.addEventListener('pointerdown', this.handlePointer);
+    window.addEventListener('keydown', this.handleKey);
+    this.last = performance.now();
+    this.loop = this.loop.bind(this);
+    this._raf = requestAnimationFrame(this.loop);
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this._raf);
+    if (this.canvas) this.canvas.removeEventListener('pointerdown', this.handlePointer);
+    window.removeEventListener('keydown', this.handleKey);
+  }
+
+  // ---------- storage ----------
+  loadAll() {
+    let scores = null, best = 0;
+    try { scores = JSON.parse(localStorage.getItem('neondash.scores.v1')); } catch (e) {}
+    try { best = parseInt(localStorage.getItem('neondash.best.v1')) || 0; } catch (e) {}
+    if (!Array.isArray(scores) || !scores.length) {
+      scores = [{ name: 'NEO', score: 8400 }, { name: 'AYA', score: 6250 }, { name: 'JET', score: 4800 }, { name: 'ZED', score: 3300 }, { name: 'KAI', score: 2100 }, { name: 'RIO', score: 1200 }];
+    }
+    this.state.scores = scores;
+    this.state.best = Math.max(best, scores[0] ? scores[0].score : 0);
+  }
+  saveScores(arr) {
+    try { localStorage.setItem('neondash.scores.v1', JSON.stringify(arr)); } catch (e) {}
+  }
+  saveBest(b) { try { localStorage.setItem('neondash.best.v1', String(b)); } catch (e) {} }
+
+  // ---------- config (tweaks) ----------
+  diffCfg() {
+    const d = this.props.difficulty || 'Normal';
+    if (d === 'Chill') return { base: 1.8, ramp: 0.00045, cap: 5.0, spMin: 96, spVar: 74, high: 0.30 };
+    if (d === 'Hard') return { base: 2.9, ramp: 0.00092, cap: 7.3, spMin: 70, spVar: 58, high: 0.46 };
+    return { base: 2.2, ramp: 0.0006, cap: 6.3, spMin: 82, spVar: 72, high: 0.38 };
+  }
+  theme() {
+    const t = this.props.theme || 'Synthwave';
+    if (t === 'Acid') return { player: '#b6ff3a', glow: '#b6ff3a', low: '#ff3df0', high: '#39ff14', grid: '#39ff14' };
+    if (t === 'Ice') return { player: '#9be7ff', glow: '#9be7ff', low: '#5d7bff', high: '#eafaff', grid: '#4aa8ff' };
+    return { player: '#00f0ff', glow: '#00f0ff', low: '#ff2e97', high: '#ffe14d', grid: '#ff2e97' };
+  }
+
+  // ---------- audio ----------
+  ensureAudio() {
+    if (!this.actx) { try { this.actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (this.actx && this.actx.state === 'suspended') this.actx.resume();
+  }
+  blip(freq, dur, type) {
+    if (!this.actx) return;
+    const t = this.actx.currentTime, o = this.actx.createOscillator(), g = this.actx.createGain();
+    o.type = type || 'square'; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.actx.destination); o.start(t); o.stop(t + dur);
+  }
+  deathSound() {
+    this.blip(330, 0.12, 'square');
+    setTimeout(() => this.blip(220, 0.16, 'square'), 90);
+    setTimeout(() => this.blip(130, 0.24, 'sawtooth'), 200);
+  }
+
+  // ---------- input ----------
+  handlePointer(e) {
+    this.ensureAudio();
+    if (this.state.screen !== 'playing') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - r.top;
+    if (y > r.height * 0.62) this.doSlide(); else this.doJump();
+  }
+  handleKey(e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      this.ensureAudio();
+      if (this.state.screen === 'playing') { e.preventDefault(); this.doJump(); }
+      else if (this.state.screen === 'home') this.startGame();
+    } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+      if (this.state.screen === 'playing') { e.preventDefault(); this.doSlide(); }
+    } else if (e.code === 'Enter') {
+      if (this.state.screen === 'home') this.startGame();
+    }
+  }
+  doJump() {
+    const p = this.world && this.world.player; if (!p) return;
+    if (p.grounded) {
+      if (p.sliding) { p.sliding = false; p.y = this.groundY - this.PH; } // jump straight out of a slide
+      p.vy = this.JUMP; p.grounded = false; p.jumpBuf = 0; p.slideBuf = 0; this.blip(620, 0.1);
+    } else {
+      p.jumpBuf = 9; // buffer: fire the instant we land
+    }
+  }
+  doSlide() {
+    const p = this.world && this.world.player; if (!p) return;
+    if (p.grounded) {
+      p.sliding = true; p.slideT = 34; p.y = this.groundY - this.SH; p.slideBuf = 0; p.jumpBuf = 0; this.blip(300, 0.08, 'sawtooth');
+    } else {
+      if (p.vy < 6) p.vy = 6; // fast-drop out of a jump
+      p.slideBuf = 12; // buffer the slide for landing
+    }
+  }
+
+  // ---------- game flow ----------
+  startGame() {
+    this.ensureAudio();
+    const cfg = this.diffCfg();
+    this.world = {
+      player: { x: 46, y: this.groundY - this.PH, w: 16, vy: 0, grounded: true, sliding: false, slideT: 0, jumpBuf: 0, slideBuf: 0 },
+      obstacles: [], coins: [], speed: cfg.base, dist: 0, gold: 0, spawnT: 55
+    };
+    this.scoreEl = null; this.coinEl = null;
+    this.setState({ screen: 'playing', score: 0, coins: 0, dist: 0, showHint: true });
+    clearTimeout(this._hintT);
+    this._hintT = setTimeout(() => { if (this.state.screen === 'playing') this.setState({ showHint: false }); }, 2600);
+  }
+  spawnCoins() {
+    const w = this.world, bx = this.CW + 30 + Math.random() * 28, cy = this.groundY - 30;
+    const n = 3 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < n; i++) {
+      w.coins.push({ x: bx + i * 12, y: cy - Math.sin((i / (n - 1)) * Math.PI) * 12, ph: Math.random() * 6, taken: false });
+    }
+  }
+  gameUpdate() {
+    const w = this.world; if (!w) return;
+    const cfg = this.diffCfg();
+    const p = w.player;
+    w.speed = Math.min(cfg.cap, cfg.base + w.dist * cfg.ramp);
+    w.dist += w.speed;
+    // physics
+    const prevGrounded = p.grounded;
+    p.vy += this.GRAV; p.y += p.vy;
+    const curH = p.sliding ? this.SH : this.PH;
+    const floorTop = this.groundY - curH;
+    if (p.y >= floorTop) {
+      p.y = floorTop; p.vy = 0; p.grounded = true;
+      if (!prevGrounded) { // just landed — flush buffered input
+        if (p.jumpBuf > 0) {
+          p.jumpBuf = 0; if (p.sliding) { p.sliding = false; p.y = this.groundY - this.PH; }
+          p.vy = this.JUMP; p.grounded = false; this.blip(620, 0.1);
+        } else if (p.slideBuf > 0) {
+          p.slideBuf = 0; p.sliding = true; p.slideT = 34; p.y = this.groundY - this.SH; this.blip(300, 0.08, 'sawtooth');
+        }
+      }
+    } else p.grounded = false;
+    if (p.sliding) { p.slideT--; if (p.slideT <= 0) { p.sliding = false; p.y = this.groundY - this.PH; } }
+    if (p.jumpBuf > 0) p.jumpBuf--;
+    if (p.slideBuf > 0) p.slideBuf--;
+    // spawn
+    w.spawnT -= 1;
+    if (w.spawnT <= 0) {
+      if (Math.random() < cfg.high) w.obstacles.push({ type: 'high', x: this.CW + 8, y: this.groundY - 50, w: 12, h: 38 });
+      else w.obstacles.push({ type: 'low', x: this.CW + 8, y: this.groundY - 18, w: 11 + Math.floor(Math.random() * 9), h: 18 });
+      w.spawnT = (cfg.spMin + Math.random() * cfg.spVar) / w.speed;
+      if (Math.random() < 0.55) this.spawnCoins();
+    }
+    const px = p.x, pw = p.w, py = p.y, ph = curH;
+    // obstacles
+    for (let i = w.obstacles.length - 1; i >= 0; i--) {
+      const o = w.obstacles[i]; o.x -= w.speed;
+      if (o.x + o.w < -4) { w.obstacles.splice(i, 1); continue; }
+      if (px < o.x + o.w && px + pw > o.x && py < o.y + o.h && py + ph > o.y) { this.gameOver(); return; }
+    }
+    // coins
+    for (let i = w.coins.length - 1; i >= 0; i--) {
+      const c = w.coins[i]; c.x -= w.speed;
+      if (c.x < -6) { w.coins.splice(i, 1); continue; }
+      if (!c.taken && Math.abs(c.x - (px + pw / 2)) < 8 && Math.abs(c.y - (py + ph / 2)) < 11) {
+        c.taken = true; w.gold++; this.blip(1040, 0.07); w.coins.splice(i, 1);
+      }
+    }
+    // HUD
+    if (!this.scoreEl) this.scoreEl = document.getElementById('pd-score');
+    if (!this.coinEl) this.coinEl = document.getElementById('pd-coins');
+    const sc = Math.floor(w.dist / 8) + w.gold * 10;
+    if (this.scoreEl) this.scoreEl.textContent = this.pad(sc);
+    if (this.coinEl) this.coinEl.textContent = String(w.gold);
+  }
+  gameOver() {
+    const w = this.world;
+    const sc = Math.floor(w.dist / 8) + w.gold * 10;
+    const best = Math.max(this.state.best, sc);
+    const arr = this.state.scores;
+    const qual = sc > 0 && (arr.length < 8 || sc > arr[arr.length - 1].score);
+    this.deathSound();
+    this.lastEntry = null;
+    this.saveBest(best);
+    this.setState({ screen: 'gameover', score: sc, coins: w.gold, dist: Math.floor(w.dist / 10), best, isNewHigh: qual, enteringInitials: qual, initials: [0, 0, 0], rank: 0 });
+  }
+  chg(i, d) {
+    const a = this.state.initials.slice();
+    a[i] = (a[i] + d + 26) % 26;
+    this.blip(880, 0.04);
+    this.setState({ initials: a });
+  }
+  submitScore() {
+    const L = this.LETTERS, ini = this.state.initials;
+    const name = L[ini[0]] + L[ini[1]] + L[ini[2]];
+    const entry = { name, score: this.state.score };
+    this.lastEntry = entry;
+    let arr = this.state.scores.slice();
+    arr.push(entry); arr.sort((a, b) => b.score - a.score); arr = arr.slice(0, 8);
+    const rank = arr.indexOf(entry) + 1;
+    this.saveScores(arr);
+    this.blip(1320, 0.1);
+    this.setState({ scores: arr, enteringInitials: false, rank });
+  }
+
+  // ---------- loop + render ----------
+  loop(now) {
+    let dt = now - this.last; this.last = now;
+    if (dt > 100) dt = 100;
+    this.acc += dt;
+    let steps = 0;
+    while (this.acc >= 16.6667 && steps < 5) {
+      if (this.state.screen === 'playing') this.gameUpdate();
+      this.acc -= 16.6667; steps++;
+    }
+    this.draw();
+    this._raf = requestAnimationFrame(this.loop);
+  }
+  pad(n) { return String(Math.max(0, Math.floor(n))).padStart(6, '0'); }
+
+  draw() {
+    const ctx = this.ctx; if (!ctx) return;
+    this.tick++;
+    const playing = this.state.screen === 'playing';
+    const sp = playing && this.world ? this.world.speed : 2.6;
+    this.gridOffset += sp * 0.03; this.gridScroll += sp * 0.6;
+    ctx.clearRect(0, 0, this.CW, this.CH);
+    this.drawSky(); this.drawStars(); this.drawSun(); this.drawRidge(); this.drawGrid();
+    if (playing && this.world) {
+      for (const c of this.world.coins) this.drawCoin(c);
+      for (const o of this.world.obstacles) this.drawObstacle(o);
+      const p = this.world.player, curH = p.sliding ? this.SH : this.PH;
+      const mode = !p.grounded ? 'jump' : (p.sliding ? 'slide' : 'run');
+      this.drawPlayer(p.x, p.y, p.w, curH, mode);
+    } else {
+      this.drawPlayer(46, this.groundY - this.PH, 16, this.PH, 'run');
+    }
+  }
+  drawSky() {
+    const ctx = this.ctx, g = ctx.createLinearGradient(0, 0, 0, this.groundY);
+    g.addColorStop(0, '#08010f'); g.addColorStop(0.55, '#27093f'); g.addColorStop(1, '#5a1c63');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, this.CW, this.groundY);
+  }
+  drawStars() {
+    const ctx = this.ctx; ctx.fillStyle = '#ffffff';
+    for (const s of this.stars) {
+      ctx.globalAlpha = 0.35 + 0.55 * Math.abs(Math.sin(this.tick * 0.04 + s.ph));
+      ctx.fillRect(s.x | 0, s.y | 0, s.s, s.s);
+    }
+    ctx.globalAlpha = 1;
+  }
+  drawSun() {
+    const ctx = this.ctx, cx = this.CW / 2, cy = this.groundY - 4, r = 34;
+    const g = ctx.createLinearGradient(0, cy - r, 0, cy + r * 0.3);
+    g.addColorStop(0, '#fff39a'); g.addColorStop(0.5, '#ff7aa8'); g.addColorStop(1, '#e23b86');
+    ctx.save(); ctx.shadowColor = '#ff5d8f'; ctx.shadowBlur = 22; ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#27093f';
+    for (let i = 0; i < 7; i++) { ctx.fillRect(cx - r, cy - r * 0.04 + i * 2.9, r * 2, 0.8 + i * 0.55); }
+  }
+  drawRidge() {
+    const ctx = this.ctx, gy = this.groundY; ctx.fillStyle = '#190a30';
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(0, gy - 13); ctx.lineTo(26, gy - 25); ctx.lineTo(50, gy - 11); ctx.lineTo(70, gy - 20); ctx.lineTo(88, gy - 9); ctx.lineTo(88, gy); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(this.CW, gy); ctx.lineTo(this.CW, gy - 15); ctx.lineTo(this.CW - 28, gy - 27); ctx.lineTo(this.CW - 50, gy - 13); ctx.lineTo(this.CW - 72, gy - 21); ctx.lineTo(this.CW - 90, gy - 9); ctx.lineTo(this.CW - 90, gy); ctx.closePath(); ctx.fill();
+  }
+  drawGrid() {
+    const ctx = this.ctx, CW = this.CW, CH = this.CH, hy = this.groundY, th = this.theme();
+    ctx.fillStyle = '#0a0420'; ctx.fillRect(0, hy, CW, CH - hy);
+    ctx.save();
+    ctx.strokeStyle = th.grid; ctx.lineWidth = 1; ctx.shadowColor = th.grid; ctx.shadowBlur = 5;
+    const vp = CW / 2, frac = this.gridOffset % 1;
+    for (let i = 0; i < 11; i++) {
+      const t = (i + frac) / 11;
+      const y = hy + (CH - hy) * Math.pow(t, 1.8);
+      ctx.globalAlpha = 0.25 + 0.55 * t;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 0.6;
+    const spacing = 22, vo = this.gridScroll % spacing;
+    for (let gx = -CW; gx <= CW * 2; gx += spacing) {
+      const bx = gx - vo;
+      ctx.beginPath(); ctx.moveTo(vp, hy); ctx.lineTo(bx, CH); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  drawObstacle(o) {
+    const ctx = this.ctx, th = this.theme();
+    ctx.save();
+    if (o.type === 'high') {
+      ctx.strokeStyle = th.high; ctx.lineWidth = 1; ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.moveTo(o.x + o.w / 2, 0); ctx.lineTo(o.x + o.w / 2, o.y); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.shadowColor = th.high; ctx.shadowBlur = 8; ctx.fillStyle = th.high;
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(o.x, o.y + o.h - 2, o.w, 2);
+    } else {
+      ctx.shadowColor = th.low; ctx.shadowBlur = 8; ctx.fillStyle = th.low;
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(o.x, o.y, o.w, 2);
+    }
+    ctx.restore();
+  }
+  drawCoin(c) {
+    const ctx = this.ctx, r = 5, s = 0.35 + 0.65 * Math.abs(Math.cos(this.tick * 0.12 + c.ph));
+    ctx.save(); ctx.translate(c.x, c.y); ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 9; ctx.fillStyle = '#ffd23f';
+    ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r * s, 0); ctx.lineTo(0, r); ctx.lineTo(-r * s, 0); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#fff4c0'; ctx.fillRect(-1, -2, 2, 1);
+    ctx.restore();
+  }
+  drawPlayer(px, py, w, h, mode) {
+    const ctx = this.ctx, th = this.theme();
+    ctx.save();
+    ctx.shadowColor = th.glow; ctx.shadowBlur = 9; ctx.fillStyle = th.player;
+    ctx.fillRect(px, py, w, h - 4);
+    // visor
+    ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(6,18,40,.85)';
+    ctx.fillRect(px + 3, py + 3, w - 6, mode === 'slide' ? 3 : 5);
+    // eye
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(px + w - 6, py + (mode === 'slide' ? 3 : 5), 3, 3);
+    // antenna
+    ctx.shadowColor = th.low; ctx.shadowBlur = 6; ctx.fillStyle = th.low;
+    ctx.fillRect(px + w - 4, py - 4, 2, 4); ctx.fillRect(px + w - 5, py - 6, 4, 2);
+    ctx.shadowBlur = 0; ctx.fillStyle = th.player;
+    const by = py + h - 4;
+    if (mode === 'run') {
+      const f = Math.floor(this.tick / 4) % 2;
+      if (f === 0) { ctx.fillRect(px + 2, by, 4, 4); ctx.fillRect(px + w - 8, by, 4, 2); }
+      else { ctx.fillRect(px + 2, by, 4, 2); ctx.fillRect(px + w - 8, by, 4, 4); }
+    } else if (mode === 'jump') {
+      ctx.fillRect(px + 2, by, 4, 3); ctx.fillRect(px + w - 8, by, 4, 3);
+    }
+    ctx.restore();
+  }
+
+  renderVals() {
+    const S = this.state, L = this.LETTERS;
+    return {
+      isHome: S.screen === 'home', isPlaying: S.screen === 'playing',
+      isGameover: S.screen === 'gameover', isScores: S.screen === 'scores',
+      showHint: S.showHint, enteringInitials: S.enteringInitials, notEntering: !S.enteringInitials,
+      hasRank: S.rank > 0,
+      scanlinesOn: this.props.scanlines !== false,
+      scoreText: this.pad(S.score), coinsText: String(S.coins), distText: String(S.dist) + 'm',
+      bestText: this.pad(S.best), isNewHigh: S.isNewHigh, rankText: '#' + S.rank,
+      l0: L[S.initials[0]], l1: L[S.initials[1]], l2: L[S.initials[2]],
+      scoresView: S.scores.map((s, i) => ({
+        rankText: String(i + 1).padStart(2, '0'), name: s.name, score: this.pad(s.score),
+        color: s === this.lastEntry ? '#ffe14d' : '#7df9ff'
+      })),
+      onJumpBtn: (e) => { if (e && e.preventDefault) e.preventDefault(); this.ensureAudio(); this.doJump(); },
+      onSlideBtn: (e) => { if (e && e.preventDefault) e.preventDefault(); this.ensureAudio(); this.doSlide(); },
+      onPlay: () => this.startGame(),
+      onShowScores: () => this.setState({ screen: 'scores' }),
+      onBack: () => this.setState({ screen: S.score >= 0 && this.lastEntry ? 'gameover' : 'home' }),
+      onRetry: () => this.startGame(),
+      onHome: () => { this.lastEntry = null; this.setState({ screen: 'home' }); },
+      onUp0: () => this.chg(0, 1), onDown0: () => this.chg(0, -1),
+      onUp1: () => this.chg(1, 1), onDown1: () => this.chg(1, -1),
+      onUp2: () => this.chg(2, 1), onDown2: () => this.chg(2, -1),
+      onDone: () => this.submitScore()
+    };
+  }
+}
+</script>
+</body>
+</html>
